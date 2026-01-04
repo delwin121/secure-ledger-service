@@ -82,5 +82,3 @@ graph TD
 - **Reasoning**: Easier to implement and control than network-level chaos (e.g., tc/netem) for a demo.
 - **Impact**: Validate observability dashboards instantly.
 
----
-*Built with ❤️ by Antigravity*
