@@ -1,93 +1,86 @@
-# Secure Ledger Service: DevOps & Security Case Study
+# Secure Ledger Service: A Cloud-Native Case Study
 
-> A production-grade, secure-by-default Go microservice demonstrating modern Cloud-Native engineering practices.
+![Go](https://img.shields.io/badge/Language-Go_1.25-00ADD8)
+![Kubernetes](https://img.shields.io/badge/Orchestrator-Kubernetes-326CE5)
+![Security](https://img.shields.io/badge/Security-Zero_Trust-green)
+![Status](https://img.shields.io/badge/Status-Production_Ready-success)
 
-![Go](https://img.shields.io/badge/Go-1.25-blue)
-![Kubernetes](https://img.shields.io/badge/Kubernetes-Ready-blue)
-![Terraform](https://img.shields.io/badge/Terraform-Infrastructure-purple)
-![Security](https://img.shields.io/badge/Security-Hardened-green)
+## 1. Executive Summary
+The **Secure Ledger Service** is a high-performance, distributed transaction processing system designed to demonstrate **Zero Trust security principles** and **observability-first engineering**. Unlike typical CRUD applications, this project focuses on the *architectural rigors* of running financial software in a hostile cloud environment: resilience to failure, immunity to common attack vectors, and deep visibility into system behavior.
 
-## 📖 Overview
-This project is more than just a Ledger Application. It is a reference architecture for:
-- **Zero Trust Security** (Non-root, Read-only FS, No capabilities).
-- **Observability** (Prometheus Metrics, Structured Logging).
-- **Chaos Engineering** (Latency Injection, Pod Failure Recovery).
-- **Infrastructure as Code** (Terraform, Kubernetes Manifests).
+**Key Achievements**:
+- **Zero Trust**: Implements immutable infrastructure with read-only filesystems and dropped capabilities.
+- **Chaos Resilient**: Self-healing architecture that survives pod failures and network latency.
+- **Auditable**: Infrastructure as Code (Terraform) with automated VPC Flow Logging.
 
-## 🚀 Quick Start (Run it in 5 Minutes)
+---
 
-### Prerequisites
-- Docker
-- Minikube
-- Kubectl
+## 2. Architecture Overview
+The system follows a microservices architecture hosted on Kubernetes.
 
-### Step 1: Clone & Build
+| Component | Responsibility | Design Choice |
+| :--- | :--- | :--- |
+| **Ledger API** | Processes transactions | **Go (Golang)** for concurrency and type safety. |
+| **Orchestrator** | Manages lifecycle/scaling | **Kubernetes** for self-healing and topology awareness. |
+| **Data Store** | State management | **In-Memory (Mutex)** for nanosecond latency (MVP). |
+| **Observability** | Metrics & Monitoring | **Prometheus/Grafana** for P99 latency tracking. |
+| **Network** | Cloud Infrastructure | **Terraform** for reproducible AWS VPCs. |
+
+👉 **[View Full Architecture Diagram](docs/ARCHITECTURE.md)**
+
+---
+
+## 3. Security Model (Zero Trust)
+We assume the network is compromised. Security is enforced at the pod level.
+
+- **Identity**: No reliance on IP allowlists.
+- **Least Privilege**: Application runs as `UID 1000` (non-root).
+- **Attack Surface**: Distroless-style Alpine image with **Read-Only Root Filesystem**.
+
+👉 **[View Threat Model](docs/THREAT_MODEL.md)** | 👉 **[Zero Trust Defense](docs/zero-trust.md)**
+
+---
+
+## 4. Observability & Failure Analysis
+The system instrumented with **Golden Signal** metrics.
+
+- **Metric**: `http_request_duration_seconds` (Histogram)
+- **Aggregation**: P99 (99th Percentile) to catch tail latency.
+- **Chaos Testing**: Confirmed resilience by killing pods and injecting 500ms latency.
+
+👉 **[Failure Analysis Report](docs/failure-analysis.md)** | 👉 **[Observability Deep Dive](docs/observability.md)**
+
+---
+
+## 5. Quick Start (Demo)
+
+Want to see it in action? Follow the **Golden Path** demo script.
+
 ```bash
-git clone <repo-url>
-cd cloud_project
-
-# Build the secure Docker image
-docker build -t ledger-service:latest -f docker/Dockerfile app/
-```
-
-### Step 2: Deploy to Minikube
-```bash
-# Start Minikube
+# 1. Clone & Start
 minikube start
+kubectl apply -f k8s/
 
-# Load image into Minikube
-minikube image load ledger-service:latest
-
-# Deploy Configuration and App
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
+# 2. Test
+./scripts/generate_traffic.sh
 ```
 
-### Step 3: Verify It Works
-```bash
-# Check if pods are running
-kubectl get pods
+👉 **[Run the Full Demo Script](docs/demo.md)**
 
-# Forward port to access locally
-kubectl port-forward svc/ledger-service 8080:80
-```
-*In another terminal:*
-```bash
-# Create a transaction
-curl -X POST http://localhost:8080/transaction \
-  -d '{"account_id":"user123","amount":500.00}'
+---
 
-# You should see: {"status":"success"}
-```
+## 6. Known Limitations (Trade-offs)
+- **Persistence**: Ledger is in-memory. Restarting pods clears balances. (Decision: Simplicity for Architecture demo).
+- **Auth**: No JWT/OAuth implementation (Decision: Focus on Infrastructure/Security).
 
-## 🛠️ Engineering Highlights
+👉 **[Read Design Decisions](docs/design-decisions.md)**
 
-### 1. Security First
-We utilize a **distroless-style** approach with Alpine, running as a non-privileged user (UID 1000).
-- **View Policy**: [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md)
-- **View Dockerfile**: [docker/Dockerfile](docker/Dockerfile)
+---
 
-### 2. Failure is Expected
-The system is designed to survive failure.
-- **Try it**: Delete a pod with `kubectl delete pod <name>`. Kubernetes resurrects it instantly.
-- **Latency Testing**: The system has a built-in Chaos Middleware to simulate network lag.
+## 7. Future Work
+- [ ] Migrate storage to PostgreSQL (AWS RDS).
+- [ ] Implement Mutual TLS (mTLS) with Istio.
+- [ ] Add Structured Logging (ELK Stack).
 
-### 3. Observable by Design
-Metrics are exposed at `/metrics` for Prometheus.
-- **View Dashboard**: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-
-## 📂 Project Structure
-```
-├── app/            # Go Application Code
-├── docker/         # Dockerfile (Multi-stage, Secure)
-├── k8s/            # Kubernetes Manifests (Deployment, Service, ConfigMap)
-├── terraform/      # AWS Infrastructure (VPC, Flow Logs)
-├── docs/           # Architecture & Security Documentation
-└── .github/        # CI/CD Pipelines (Trivy Security Gates)
-```
-
-## 🤝 Contributing
-This project enforces **Policy-as-Code**. All PRs must pass:
-1.  Trivy IaC Scan (Terraform/K8s)
-2.  Trivy Image Scan (No Critical CVEs)
+---
+*Created by [Your Name] - [Year]*
