@@ -83,4 +83,4 @@ kubectl apply -f k8s/
 - [ ] Add Structured Logging (ELK Stack).
 
 ---
-*Created by [Your Name] - [Year]*
+*Created by Delwin*
